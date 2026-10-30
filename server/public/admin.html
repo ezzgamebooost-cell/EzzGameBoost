@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل مدیریت</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fffdf8;--ink:#1d1b16;--mut:#6f6a5d;--line:#e2dccb;--acc:#0f6b5c;--acc2:#e6f2ee;--bad:#b3261e;--warn:#9a6700}
+@media (prefers-color-scheme:dark){:root{--bg:#14130f;--card:#1d1b16;--ink:#f1ede2;--mut:#a39d8c;--line:#35322a;--acc:#4fc3a8;--acc2:#18302b;--bad:#ff8a80;--warn:#e3b341}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,"Segoe UI",sans-serif;line-height:1.7}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0}
+h1{font-size:18px;margin:0}
+main{max-width:980px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 12px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:110px;direction:ltr;text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+@media (prefers-color-scheme:dark){button{color:#0b1f1a}}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.bad{background:transparent;color:var(--bad);border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+th{color:var(--mut);font-weight:500}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;background:var(--acc2);color:var(--acc);font-size:12px}
+.tag.off{background:transparent;border:1px solid var(--line);color:var(--bad)}
+.tag.warn{color:var(--warn);background:transparent;border:1px solid var(--line)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.hide{display:none}
+#login{max-width:340px;margin:12vh auto}
+#login .card>*{margin-bottom:10px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:99px;opacity:0;transition:.2s;pointer-events:none}
+#toast.on{opacity:1}
+.ltr{direction:ltr;text-align:left}
+.cfg{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)}
+</style>
+</head>
+<body>
+<div id="login"><div class="card">
+  <h1>ورود مدیر</h1>
+  <input id="lu" placeholder="نام کاربری" autocomplete="username">
+  <input id="lp" type="password" placeholder="رمز عبور" autocomplete="current-password">
+  <button onclick="doLogin()" style="width:100%">ورود</button>
+</div></div>
+
+<div id="app" class="hide">
+<header><h1>پنل مدیریت تانل</h1><button class="ghost" onclick="logout()">خروج</button></header>
+<main>
+  <div class="card">
+    <h2>کاربر جدید</h2>
+    <div class="row">
+      <div><label>نام کاربری</label><input id="nu" class="ltr"></div>
+      <div><label>رمز (حداقل ۶)</label><input id="np" class="ltr"></div>
+      <div><label>تعداد روز</label><input id="nd" type="number" value="30"></div>
+      <div><label>یادداشت</label><input id="nn"></div>
+      <button onclick="addUser()">ساخت کاربر</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>کاربران</h2>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>کاربر</th><th>وضعیت</th><th>روز مانده</th><th>کانفیگ</th><th>عملیات</th></tr></thead>
+      <tbody id="users"></tbody>
+    </table></div>
+  </div>
+
+  <div class="card hide" id="cfgBox">
+    <h2>کانفیگ‌های <span id="cfgUser"></span></h2>
+    <div id="cfgList"></div>
+    <div class="row" style="margin-top:12px">
+      <div><label>نام نمایشی</label><input id="cn" placeholder="مثلا سرور آلمان"></div>
+      <div><label>نوع</label><select id="ct"><option value="wireguard">WireGuard</option><option value="v2ray">V2Ray</option></select></div>
+    </div>
+    <label style="display:block;margin-top:8px">محتوای کانفیگ (فایل .conf وایرگارد، یا لینک vless:// vmess:// trojan:// ، یا JSON کامل xray)</label>
+    <textarea id="cc"></textarea>
+    <button style="margin-top:8px" onclick="addCfg()">افزودن کانفیگ</button>
+  </div>
+
+  <div class="card">
+    <h2>تعرفه‌ها و لینک تلگرام (نمایش در اپ)</h2>
+    <label>لینک خرید تلگرام</label><input id="tg" class="ltr">
+    <label style="display:block;margin-top:8px">پلن‌ها (JSON — آرایه‌ای از title / price / desc)</label>
+    <textarea id="pl" style="direction:ltr"></textarea>
+    <button style="margin-top:8px" onclick="savePlans()">ذخیره تعرفه‌ها</button>
+  </div>
+</main></div>
+<div id="toast"></div>
+
+<script>
+let T = sessionStorage.getItem('t') || '', curUser = null;
+const $ = (id) => document.getElementById(id);
+const toast = (m) => { $('toast').textContent = m; $('toast').classList.add('on'); setTimeout(() => $('toast').classList.remove('on'), 2200); };
+async function api(path, method = 'GET', body) {
+  const r = await fetch('/api/admin' + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + T }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && path !== '/login') { logout(); throw new Error('unauth'); }
+  if (!r.ok) { toast(j.error || 'خطا'); throw new Error(j.error); }
+  return j;
+}
+async function doLogin() {
+  try {
+    const j = await api('/login', 'POST', { username: $('lu').value, password: $('lp').value });
+    T = j.token; sessionStorage.setItem('t', T); show();
+  } catch {}
+}
+function logout() { sessionStorage.removeItem('t'); T = ''; $('app').classList.add('hide'); $('login').classList.remove('hide'); }
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+async function show() {
+  $('login').classList.add('hide'); $('app').classList.remove('hide');
+  await loadUsers(); loadPlans();
+}
+async function loadUsers() {
+  const us = await api('/users');
+  const now = Date.now() / 1000;
+  $('users').innerHTML = us.map((u) => {
+    const left = Math.ceil((u.expires_at - now) / 86400);
+    const st = u.disabled ? '<span class="tag off">غیرفعال</span>' : left > 0 ? '<span class="tag">فعال</span>' : '<span class="tag warn">منقضی</span>';
+    return `<tr><td class="ltr"><b>${esc(u.username)}</b><br><small style="color:var(--mut)">${esc(u.note || '')}</small></td><td>${st}</td><td>${left > 0 ? left : 0}</td><td>${u.config_count}</td>
+    <td><div class="acts">
+      <button class="ghost" onclick="days(${u.id},30)">+۳۰ روز</button>
+      <button class="ghost" onclick="askDays(${u.id})">± روز</button>
+      <button class="ghost" onclick="openCfg(${u.id},'${esc(u.username)}')">کانفیگ‌ها</button>
+      <button class="ghost" onclick="toggle(${u.id},${u.disabled ? 0 : 1})">${u.disabled ? 'فعال‌سازی' : 'غیرفعال'}</button>
+      <button class="ghost" onclick="resetPw(${u.id})">رمز جدید</button>
+      <button class="bad" onclick="delUser(${u.id})">حذف</button>
+    </div></td></tr>`;
+  }).join('') || '<tr><td colspan="5">کاربری وجود ندارد</td></tr>';
+}
+async function addUser() {
+  await api('/users', 'POST', { username: $('nu').value.trim(), password: $('np').value, days: Number($('nd').value || 0), note: $('nn').value });
+  ['nu', 'np', 'nn'].forEach((i) => $(i).value = ''); toast('کاربر ساخته شد'); loadUsers();
+}
+async function days(id, n) { await api('/users/' + id, 'PATCH', { add_days: n }); toast('انجام شد'); loadUsers(); }
+function askDays(id) { const n = Number(prompt('تعداد روز (برای کم کردن عدد منفی بنویسید):')); if (n) days(id, n); }
+async function toggle(id, v) { await api('/users/' + id, 'PATCH', { disabled: !!v }); loadUsers(); }
+async function resetPw(id) { const p = prompt('رمز جدید (حداقل ۶ حرف):'); if (p) { await api('/users/' + id, 'PATCH', { password: p }); toast('رمز تغییر کرد'); } }
+async function delUser(id) { if (confirm('کاربر و همه کانفیگ‌هایش حذف شود؟')) { await api('/users/' + id, 'DELETE'); $('cfgBox').classList.add('hide'); loadUsers(); } }
+async function openCfg(id, name) { curUser = id; $('cfgUser').textContent = name; $('cfgBox').classList.remove('hide'); await loadCfg(); $('cfgBox').scrollIntoView({ behavior: 'smooth' }); }
+async function loadCfg() {
+  const cs = await api(`/users/${curUser}/configs`);
+  $('cfgList').innerHTML = cs.map((c) => `<div class="cfg"><span><span class="tag">${c.type}</span> ${esc(c.name)}</span><button class="bad" onclick="delCfg(${c.id})">حذف</button></div>`).join('') || '<small style="color:var(--mut)">کانفیگی ندارد</small>';
+}
+async function addCfg() {
+  await api(`/users/${curUser}/configs`, 'POST', { name: $('cn').value, type: $('ct').value, content: $('cc').value });
+  $('cn').value = ''; $('cc').value = ''; toast('کانفیگ اضافه شد'); loadCfg(); loadUsers();
+}
+async function delCfg(id) { await api('/configs/' + id, 'DELETE'); loadCfg(); loadUsers(); }
+async function loadPlans() { const p = await api('/plans'); $('tg').value = p.telegram_url; $('pl').value = JSON.stringify(p.plans, null, 2); }
+async function savePlans() {
+  let plans; try { plans = JSON.parse($('pl').value); } catch { return toast('JSON نامعتبر است'); }
+  await api('/plans', 'PUT', { telegram_url: $('tg').value.trim(), plans }); toast('ذخیره شد');
+}
+$('lp').addEventListener('keydown', (e) => e.key === 'Enter' && doLogin());
+if (T) show().catch(() => {});
+</script>
+</body>
+</html>
