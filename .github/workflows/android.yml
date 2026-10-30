@@ -17,7 +17,6 @@ jobs:
         with: { gradle-version: '8.9' }
       - name: Build debug APK
         working-directory: android
-        # در Settings > Secrets and variables > Actions > Variables یک متغیر SERVER_URL بسازید
         run: gradle assembleDebug -PSERVER_URL="${{ vars.SERVER_URL }}"
       - uses: actions/upload-artifact@v4
         with:
